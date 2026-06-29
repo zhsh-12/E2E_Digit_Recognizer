@@ -1,0 +1,34 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.uv/
+uv.lock
+
+# Node / Frontend (will be built inside Docker)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Data & runtime files (not needed for build)
+input_imgs/
+tests/
+training/
+digit_recognizer.db
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Docker files (not needed inside build context)
+docker/Dockerfile
+docker/Dockerfile.frontend
+docker/docker-compose.yml
