@@ -1,0 +1,40 @@
+{
+  "app.title": "🔢 Digit Recognition System",
+  "nav.single": "Single Prediction",
+  "nav.batch": "Batch Prediction",
+  "nav.history": "History",
+
+  "single.title": "📷 Single Image Prediction",
+  "single.upload_text": "Click or drag an image here",
+  "single.upload_hint": "Supports JPG / PNG / JPEG",
+  "single.prediction_label": "Prediction",
+  "single.confidence": "Confidence",
+  "single.save": "Save",
+  "single.saving": "Saving...",
+  "single.download_csv": "📥 Download CSV",
+  "single.downloading": "Downloading...",
+  "single.saved": "Saved successfully (ID: {id})",
+
+  "batch.title": "📦 Batch Image Prediction",
+  "batch.upload_text": "Click to select multiple images, or drag them here",
+  "batch.upload_hint": "Supports JPG / PNG / JPEG, multiple selection",
+  "batch.predicting": "Predicting... {processed} / {total}",
+  "batch.save": "Save",
+  "batch.saving": "Saving...",
+  "batch.download_csv": "📥 Download CSV",
+  "batch.downloading": "Downloading...",
+  "batch.saved": "Saved successfully (Batch: {batch})",
+
+  "stats.total": "Total",
+
+  "history.title": "📋 Prediction History",
+  "history.loading": "Loading...",
+  "history.empty": "No records yet",
+  "history.total": "{count} records total",
+  "history.id": "ID",
+  "history.filename": "Filename",
+  "history.prediction": "Prediction",
+  "history.confidence": "Confidence",
+  "history.batch": "Batch",
+  "history.time": "Time"
+}

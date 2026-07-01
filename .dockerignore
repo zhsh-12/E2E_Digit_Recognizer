@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+*.egg-info
+.coverage
+.coveragerc
+pytest.ini
+
+# Pytest cache
+.pytest_cache
+
+# Training & test data (not needed for deployment)
+data_for_training
+test_imgs
+trained_models
+
+# ONNX source models (quantized model is used for deployment)
+onnx_models
+onnx_quantization
+
+# Tests
+tests
+coverage_report
+
+# Frontend (dist is built inside Docker, source files are needed for build)
+frontend/node_modules
+frontend/tests
+frontend/playwright-report
+frontend/playwright.config.js
+frontend/dist
+
+# Database (persisted via volume, not needed in image)
+digit_recognizer.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Lock files (not needed in Docker)
+uv.lock

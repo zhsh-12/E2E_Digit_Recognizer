@@ -1,0 +1,40 @@
+{
+  "app.title": "🔢 数字识别系统",
+  "nav.single": "单张预测",
+  "nav.batch": "批量预测",
+  "nav.history": "历史记录",
+
+  "single.title": "📷 单张图片预测",
+  "single.upload_text": "点击选择图片，或拖拽图片到此处",
+  "single.upload_hint": "支持 JPG / PNG / JPEG 格式",
+  "single.prediction_label": "预测结果",
+  "single.confidence": "置信度",
+  "single.save": "保存",
+  "single.saving": "保存中...",
+  "single.download_csv": "📥 下载 CSV",
+  "single.downloading": "下载中...",
+  "single.saved": "保存成功 (ID: {id})",
+
+  "batch.title": "📦 批量图片预测",
+  "batch.upload_text": "点击选择多张图片，或拖拽图片到此处",
+  "batch.upload_hint": "支持 JPG / PNG / JPEG 格式，可多选",
+  "batch.predicting": "正在预测... {processed} / {total}",
+  "batch.save": "保存",
+  "batch.saving": "保存中...",
+  "batch.download_csv": "📥 下载 CSV",
+  "batch.downloading": "下载中...",
+  "batch.saved": "保存成功 (批次: {batch})",
+
+  "stats.total": "总数",
+
+  "history.title": "📋 预测历史记录",
+  "history.loading": "加载中...",
+  "history.empty": "暂无历史记录",
+  "history.total": "共 {count} 条记录",
+  "history.id": "ID",
+  "history.filename": "文件名",
+  "history.prediction": "预测值",
+  "history.confidence": "置信度",
+  "history.batch": "批次",
+  "history.time": "时间"
+}
