@@ -33,6 +33,25 @@ v2 在 v1（PyTorch 推理 + FastAPI + Vue 3 + Docker）基础上，引入工业
 > 📐 **工程规范** — uv 包管理 + Makefile 自动化 + 多阶段 Docker 构建 + 混合数据集校准策略
 >
 > 🧪 **质量保障** — **109 项**全链路测试（pytest + vitest + Playwright），后端代码覆盖率 **95%**，性能基准测试持续追踪
+核心是一套**自定义超轻量 ResNet-CNN**（仅约 49K 参数），在多个来源的混合数据集上从零训练和微调，实现 0-9 多场景数字的高精度识别。后端基于 FastAPI 提供高性能推理服务，支持单图和批量并发预测。前端使用 Vue 3 + Vite 构建交互式界面。通过 Docker Compose 可一键部署。
+
+---
+
+## ✨ 功能特性 / Features
+
+| 特性 | 说明 |
+|------|------|
+| 🎯 **数字识别** | 支持 0-9 多场景数字识别 |
+| 🖼️ **单图预测** | 拖拽上传或点击选择图片，实时预览 + 识别结果显示 |
+| 📦 **批量预测** | 一次最多 50 张图片，asyncio + ThreadPool 并发推理，大幅缩短等待时间 |
+| ✅ **结果校验** | 支持输入真实标签进行比对，显示 ✓/✗ 判断 |
+| 📊 **CSV 导出** | 预测结果一键导出为结构化 CSV 文件 |
+| 📋 **历史记录** | 保存预测历史，支持分页查询（默认显示最近 50 条） |
+| 🌏 **中英双语** | Vue I18n 实现的中英文界面实时切换 |
+| 🐳 **容器化部署** | Docker Compose 一键启动，Nginx 反向代理前端 API 请求 |
+| 🧪 **测试覆盖** | pytest + coverage，覆盖 API、数据库、预处理、CSV 导出等核心模块 |
+
+---
 
 ![Benchmark Comparison](docs/images/benchmark_comparison.png)
 
@@ -118,6 +137,7 @@ v2 在 v1（PyTorch 推理 + FastAPI + Vue 3 + Docker）基础上，引入工业
 ---
 
 ## 🚀 快速开始
+## 🚀 快速开始 / Quick Start
 
 > 💡 **跨平台提示**：本项目基于 Docker 容器化，支持 **macOS / Windows / Linux** 三平台一键部署，无需手动配置 Python 或 Node 环境。
 
@@ -181,6 +201,18 @@ uv run pytest tests/test_performance.py --benchmark-only
 ---
 
 ## 📌 版本规划
+---
+
+## 🧪 测试 / Testing
+
+```bash
+# 运行所有测试
+make test
+# 或者：uv run pytest
+
+# 带覆盖率报告
+make coverage
+# 或者：uv run pytest --cov --cov-report=html
 
 | 版本 | 状态 | 特性 |
 |:----:|:----:|------|

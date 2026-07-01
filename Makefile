@@ -161,3 +161,22 @@ help:
 	@echo "║  │  make test-frontend  运行前端测试     │  ║"
 	@echo "║  └──────────────────────────────────────┘  ║"
 	@echo "╚══════════════════════════════════════════════╝"
+## Open coverage HTML report
+coverage:
+	uv run pytest --cov --cov-report=html
+	@echo "Coverage report generated at htmlcov/index.html"
+
+## Start with Docker Compose
+docker-up:
+	docker-compose -f docker/docker-compose.yml up -d --build
+
+## Stop Docker services
+docker-down:
+	docker-compose -f docker/docker-compose.yml down
+
+## Clean up Python/frontend caches and build artifacts
+clean:
+	rm -rf .coverage htmlcov/
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete
+	@echo "Cleaned."
