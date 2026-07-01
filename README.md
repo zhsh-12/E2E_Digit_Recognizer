@@ -1,7 +1,7 @@
 <p align="center">
-  <h1 align="center">🖍️ 数字识别系统_V2 / Digit Recognizer_V2 </h1>
+  <h1 align="center">🖍️ 数字识别系统/Digit Recognizer_V2 </h1>
   <p align="center">
-    从模型量化到服务部署的全栈数字识别应用<br>
+    从模型量化到服务部署的全栈数字识别应用 
     <em>End-to-end digit recognition from model quatization to deployment</em>
   </p>
 </p>
@@ -26,13 +26,14 @@
 
 v2 在 v1（PyTorch 推理 + FastAPI + Vue 3 + Docker）基础上，引入工业级模型优化技术栈，核心升级体现为以下四大维度：
 
-> 🚀 **模型优化** — PyTorch FP32 → ONNX FP32 导出 → **INT8 静态量化**（MinMax 校准），推理速度 **↑ 4.3 倍**（1.11ms → 0.26ms），模型体积 **↓ 10.4 倍**（3.7MB → 362KB）
->
-> 🐳 **生产部署** — ONNX Runtime 图优化（ORT_ENABLE_ALL）+ Gunicorn 多进程 + Nginx 反向代理，Docker 镜像 **↓ 75%**（1.2GB → 300MB），**跨平台一键部署（macOS / Windows / Linux）**
->
-> 📐 **工程规范** — uv 包管理 + Makefile 自动化 + 多阶段 Docker 构建 + 混合数据集校准策略
->
-> 🧪 **质量保障** — **109 项**全链路测试（pytest + vitest + Playwright），后端代码覆盖率 **95%**，性能基准测试持续追踪
+🚀 **模型优化** — PyTorch FP32 → ONNX FP32 导出 → **INT8 静态量化**（MinMax 校准），推理速度 **↑ 4.3 倍**（1.11ms → 0.26ms），模型体积 **↓ 10.4 倍**（3.7MB → 362KB）
+
+🐳 **生产部署** — ONNX Runtime 图优化（ORT_ENABLE_ALL）+ Gunicorn 多进程 + Nginx 反向代理，Docker 镜像 **↓ 75%**（1.2GB → 300MB），**跨平台一键部署（macOS / Windows / Linux）**
+
+📐 **工程规范** — uv 包管理 + Makefile 自动化 + 多阶段 Docker 构建 + 混合数据集校准策略
+
+🧪 **质量保障** — **109 项**全链路测试（pytest + vitest + Playwright），后端代码覆盖率 **95%**，性能基准测试持续追踪
+
 
 ![Benchmark Comparison](docs/images/benchmark_comparison.png)
 
@@ -177,16 +178,6 @@ make test-frontend
 # 性能基准测试
 uv run pytest tests/test_performance.py --benchmark-only
 ```
-
----
-
-## 📌 版本规划
-
-| 版本 | 状态 | 特性 |
-|:----:|:----:|------|
-| **v1** | ✅ 已完成 | 全栈数字识别：PyTorch 训练 + FastAPI + Vue 3 + Docker |
-| **v2** | ✅ 已完成 | **ONNX 量化加速**：INT8 静态量化 + ONNX Runtime 推理 + 生产级部署 + 全链路测试 |
-| **v3** | 📋 规划中 | **Optuna AutoML 自动调参** — 超参数自动搜索，进一步提升模型精度与训练效率 |
 
 ---
 
