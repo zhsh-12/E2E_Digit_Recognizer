@@ -30,18 +30,6 @@
         <div class="stat-value">{{ totalCount }}</div>
         <div class="stat-label">{{ $t('stats.total') }}</div>
       </div>
-      <div class="stat-item">
-        <div class="stat-value" style="color: #52c41a;">{{ correctCount }}</div>
-        <div class="stat-label">{{ $t('stats.correct') }}</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" style="color: #ff4d4f;">{{ wrongCount }}</div>
-        <div class="stat-label">{{ $t('stats.wrong') }}</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" :style="{ color: accuracyColor }">{{ accuracy }}%</div>
-        <div class="stat-label">{{ $t('stats.accuracy') }}</div>
-      </div>
     </div>
 
     <!-- Progress bar -->
@@ -71,24 +59,14 @@
         v-for="item in results"
         :key="item.filename"
         class="preview-card"
-        :class="{
-          correct: item.verdict === true,
-          wrong: item.verdict === false,
-        }"
       >
         <img :src="item.previewUrl" :alt="item.filename" />
         <div class="filename">{{ item.filename }}</div>
-        <div
-          class="prediction"
-          :class="{
-            correct: item.verdict === true,
-            wrong: item.verdict === false,
-          }"
-        >
+        <div class="prediction">
           {{ item.prediction !== null ? item.prediction : '?' }}
         </div>
-        <div v-if="item.trueLabel !== null" class="true-label">
-          {{ $t('batch.true_label', { label: item.trueLabel }) }}
+        <div v-if="item.confidence !== null" class="confidence">
+          {{ formatConfidence(item.confidence) }}
         </div>
         <div v-if="item.error" class="error-msg" style="font-size: 12px;">{{ item.error }}</div>
       </div>
@@ -117,7 +95,10 @@ const saveSuccess = ref(false)
 const csvLoading = ref(false)
 let savedBatchId = ''
 let savedBatchResults = []
-let savedBatchAccuracy = 0
+
+function formatConfidence(val) {
+  return val !== null && val !== undefined ? (val * 100).toFixed(1) + '%' : '-'
+}
 
 function triggerUpload() {
   fileInput.value.click()
@@ -136,11 +117,6 @@ function handleDrop(e) {
   if (files.length > 0) processFiles(files)
 }
 
-function extractTrueLabel(filename) {
-  const match = filename.match(/\[(\d+)\]/)
-  return match ? parseInt(match[1]) : null
-}
-
 async function processFiles(files) {
   errorMsg.value = ''
   results.value = []
@@ -154,23 +130,33 @@ async function processFiles(files) {
     filename: file.name,
     previewUrl: URL.createObjectURL(file),
     prediction: null,
-    trueLabel: extractTrueLabel(file.name),
-    verdict: null,
+    confidence: null,
     error: null,
   }))
   results.value = fileItems
 
   try {
-    const data = await predictBatch(files, (processed, total) => {
-      // Progress callback
+    const data = await predictBatch(files, (batchResults, processed, total) => {
+      // Real-time progress: merge current batch results into preview cards
+      let resultIndex = 0
+      for (let i = 0; i < results.value.length; i++) {
+        if (results.value[i].prediction === null && resultIndex < batchResults.length) {
+          results.value[i].prediction = batchResults[resultIndex].prediction
+          results.value[i].confidence = batchResults[resultIndex].confidence
+          results.value[i].error = batchResults[resultIndex].error
+          resultIndex++
+        }
+      }
     })
+    // Fill any remaining results that weren't covered by progress callbacks
+    // (for single-batch case where onProgress doesn't pass batchResults)
     data.results.forEach((res, index) => {
       if (index < results.value.length) {
-        results.value[index].prediction = res.prediction
-        results.value[index].error = res.error
-        if (res.prediction !== null && results.value[index].trueLabel !== null) {
-          results.value[index].verdict = res.prediction === results.value[index].trueLabel
+        if (results.value[index].prediction === null) {
+          results.value[index].prediction = res.prediction
+          results.value[index].confidence = res.confidence
         }
+        results.value[index].error = res.error
       }
     })
   } catch (err) {
@@ -186,29 +172,26 @@ async function saveBatch() {
   saveError.value = ''
   saveSuccess.value = false
 
-  const batchId = 'frontend_' + new Date().toISOString().slice(0, 10).replace(/-/g, '') +
-    '_' + Date.now().toString(36)
+  const now = new Date()
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '')
+  const timeStr = now.getTime().toString(36)
+  const batchId = 'batch_' + dateStr + '_' + timeStr
 
   const batchResults = results.value.map((item) => ({
     filename: item.filename,
     predicted_label: item.prediction,
-    true_label: item.trueLabel,
+    confidence: item.confidence,
   }))
-
-  const hasLabels = results.value.some(item => item.trueLabel !== null)
-  const acc = hasLabels ? parseFloat(accuracy.value) : null
 
   try {
     const result = await saveBatchResults({
       batch_id: batchId,
       results: batchResults,
-      batch_accuracy: acc,
     })
     saveMsg.value = t('batch.saved', { batch: batchId })
     saveSuccess.value = true
     savedBatchId = batchId
     savedBatchResults = batchResults
-    savedBatchAccuracy = acc
   } catch (err) {
     saveError.value = 'Save failed: ' + (err.response?.data?.detail || err.message)
   } finally {
@@ -222,7 +205,6 @@ async function downloadCsv() {
     await exportCsv({
       batch_id: savedBatchId,
       results: savedBatchResults,
-      batch_accuracy: savedBatchAccuracy,
     })
   } catch (err) {
     saveError.value = 'CSV download failed: ' + (err.response?.data?.detail || err.message)
@@ -236,16 +218,4 @@ const processedCount = computed(() => results.value.filter((r) => r.prediction !
 const progressPercent = computed(() =>
   totalCount.value > 0 ? (processedCount.value / totalCount.value) * 100 : 0
 )
-const correctCount = computed(() => results.value.filter((r) => r.verdict === true).length)
-const wrongCount = computed(() => results.value.filter((r) => r.verdict === false).length)
-const accuracy = computed(() => {
-  const total = correctCount.value + wrongCount.value
-  return total > 0 ? ((correctCount.value / total) * 100).toFixed(1) : '-'
-})
-const accuracyColor = computed(() => {
-  const val = parseFloat(accuracy.value)
-  if (val >= 80) return '#52c41a'
-  if (val >= 60) return '#faad14'
-  return '#ff4d4f'
-})
 </script>

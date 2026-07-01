@@ -1,34 +1,47 @@
-# Version control
+# Git
 .git
 .gitignore
 
 # Python
-__pycache__/
+__pycache__
 *.pyc
 *.pyo
-.venv/
-.uv/
-uv.lock
+.venv
+venv
+*.egg-info
+.coverage
+.coveragerc
+pytest.ini
 
-# Node / Frontend (will be built inside Docker)
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
+# Pytest cache
+.pytest_cache
 
-# Data & runtime files (not needed for build)
-input_imgs/
-tests/
-training/
+# Training & test data (not needed for deployment)
+data_for_training
+test_imgs
+trained_models
+
+# ONNX source models (quantized model is used for deployment)
+onnx_models
+onnx_quantization
+
+# Tests
+tests
+coverage_report
+
+# Frontend (dist is built inside Docker, source files are needed for build)
+frontend/node_modules
+frontend/tests
+frontend/playwright-report
+frontend/playwright.config.js
+frontend/dist
+
+# Database (persisted via volume, not needed in image)
 digit_recognizer.db
 
-# IDE & OS
-.idea/
-.vscode/
-*.swp
-*.swo
+# OS files
 .DS_Store
+Thumbs.db
 
-# Docker files (not needed inside build context)
-docker/Dockerfile
-docker/Dockerfile.frontend
-docker/docker-compose.yml
+# Lock files (not needed in Docker)
+uv.lock

@@ -19,10 +19,8 @@
             <th style="padding: 10px 12px; text-align: left;">{{ $t('history.id') }}</th>
             <th style="padding: 10px 12px; text-align: left;">{{ $t('history.filename') }}</th>
             <th style="padding: 10px 12px; text-align: center;">{{ $t('history.prediction') }}</th>
-            <th style="padding: 10px 12px; text-align: center;">{{ $t('history.true_label') }}</th>
-            <th style="padding: 10px 12px; text-align: center;">{{ $t('history.result') }}</th>
+            <th style="padding: 10px 12px; text-align: center;">{{ $t('history.confidence') }}</th>
             <th style="padding: 10px 12px; text-align: center;">{{ $t('history.batch') }}</th>
-            <th style="padding: 10px 12px; text-align: center;">{{ $t('history.accuracy') }}</th>
             <th style="padding: 10px 12px; text-align: right;">{{ $t('history.time') }}</th>
           </tr>
         </thead>
@@ -35,19 +33,9 @@
             <td style="padding: 10px 12px; color: #999;">{{ record.id }}</td>
             <td style="padding: 10px 12px;">{{ record.filename || '-' }}</td>
             <td style="padding: 10px 12px; text-align: center; font-weight: 600;">{{ record.predicted_label }}</td>
-            <td style="padding: 10px 12px; text-align: center;">
-              {{ record.true_label !== null ? record.true_label : '-' }}
-            </td>
-            <td style="padding: 10px 12px; text-align: center;">
-              <span v-if="record.is_correct === true" style="color: #52c41a;">✓</span>
-              <span v-else-if="record.is_correct === false" style="color: #ff4d4f;">✗</span>
-              <span v-else style="color: #ccc;">-</span>
-            </td>
+            <td style="padding: 10px 12px; text-align: center;">{{ formatConfidence(record.confidence) }}</td>
             <td style="padding: 10px 12px; text-align: center; font-size: 12px; color: #999;">
               {{ record.batch_id || '-' }}
-            </td>
-            <td style="padding: 10px 12px; text-align: center;">
-              {{ record.batch_accuracy !== null ? record.batch_accuracy + '%' : '-' }}
             </td>
             <td style="padding: 10px 12px; text-align: right; font-size: 12px; color: #999; white-space: nowrap;">
               {{ formatTime(record.created_at) }}
@@ -68,6 +56,10 @@ import { getHistory } from '../api/predict.js'
 const records = ref([])
 const loading = ref(true)
 const errorMsg = ref('')
+
+function formatConfidence(val) {
+  return val !== null && val !== undefined ? (val * 100).toFixed(1) + '%' : '-'
+}
 
 onMounted(async () => {
   try {

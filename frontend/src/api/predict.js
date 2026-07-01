@@ -5,13 +5,13 @@ const api = axios.create({
   timeout: 120000, // Increased timeout to 120s for large batch uploads
 })
 
-// Maximum images per batch prediction (must match backend MAX_BATCH_SIZE)
-const MAX_BATCH_SIZE = 50
+// Maximum images per batch prediction
+const MAX_BATCH_SIZE = 120
 
 /**
  * Predict a single image
  * @param {File} file - Image file
- * @returns {Promise<{prediction: number}>}
+ * @returns {Promise<{prediction: number, confidence: number}>}
  */
 export async function predictSingle(file) {
   const formData = new FormData()
@@ -27,8 +27,8 @@ export async function predictSingle(file) {
  * - File count > MAX_BATCH_SIZE: auto-split into batches of MAX_BATCH_SIZE
  *
  * @param {File[]} files - Array of image files
- * @param {function} [onProgress] - Progress callback (processed, total) => void
- * @returns {Promise<{results: Array<{filename: string, prediction: number|null, error: string|null}>}>}
+ * @param {function} [onProgress] - Progress callback (batchResults, processed, total) => void
+ * @returns {Promise<{results: Array<{filename: string, prediction: number, confidence: number, error: string|null}>}>}
  */
 export async function predictBatch(files, onProgress) {
   if (!files || files.length === 0) {
@@ -62,7 +62,7 @@ export async function predictBatch(files, onProgress) {
     allResults.push(...response.data.results)
 
     if (onProgress) {
-      onProgress(Math.min(i + MAX_BATCH_SIZE, total), total)
+      onProgress(response.data.results, Math.min(i + MAX_BATCH_SIZE, total), total)
     }
   }
 
@@ -71,7 +71,7 @@ export async function predictBatch(files, onProgress) {
 
 /**
  * Save single prediction result
- * @param {{predicted_label: number, true_label?: number, filename?: string, session_id?: string}} data
+ * @param {{predicted_label: number, confidence: number, filename?: string, batch_id?: string}} data
  * @returns {Promise<{id: number, message: string}>}
  */
 export async function savePrediction(data) {
@@ -81,7 +81,7 @@ export async function savePrediction(data) {
 
 /**
  * Save batch prediction results
- * @param {{batch_id: string, results: Array<{filename?: string, predicted_label: number, true_label?: number}>, batch_accuracy: number, session_id?: string}} data
+ * @param {{batch_id: string, results: Array<{filename?: string, predicted_label: number, confidence: number}>}} data
  * @returns {Promise<{message: string}>}
  */
 export async function saveBatchResults(data) {
@@ -102,9 +102,9 @@ export async function getHistory(limit = 50, offset = 0) {
 
 /**
  * Export prediction results as CSV file (triggers browser download)
- * @param {Object} data - Same data structure as save endpoints
- *  Single: { filename, predicted_label, true_label }
- *  Batch: { batch_id, results: [{filename, predicted_label, true_label}], batch_accuracy }
+ * @param {Object} data
+ *  Single: { filename, predicted_label, confidence }
+ *  Batch: { batch_id, results: [{filename, predicted_label, confidence}] }
  * @returns {Promise<void>}
  */
 export async function exportCsv(data) {

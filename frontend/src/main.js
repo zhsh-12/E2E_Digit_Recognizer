@@ -8,7 +8,7 @@ import en from './locales/en.json'
 
 const i18n = createI18n({
   legacy: false, 
-  locale: 'zh-CN', // default language
+  locale: 'zh-CN', // Default language
   fallbackLocale: 'en',
   messages: {
     'zh-CN': zhCN,

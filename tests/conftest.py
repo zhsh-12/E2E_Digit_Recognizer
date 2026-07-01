@@ -1,69 +1,133 @@
-"""Shared pytest fixtures for all test modules."""
-import pytest
-import torch
-import torch.nn as nn
+"""Shared fixtures for all tests."""
+
 import io
-from PIL import Image
-from unittest.mock import patch, MagicMock
+import os
+import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pytest
+from PIL import Image
+from fastapi.testclient import TestClient
+
+# ---------------------------------------------------------------------------
+# Patch ONNX session before importing api.main (to avoid loading real model)
+# ---------------------------------------------------------------------------
+@pytest.fixture(autouse=True, scope="session")
+def _patch_onnx_session():
+    """Mock ONNX Runtime session so tests don't need a real quantized model."""
+    mock_output = np.array([[0.1, 0.2, 0.3, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.1]],
+                           dtype=np.float32)
+
+    mock_session = MagicMock()
+    mock_session.run.return_value = [mock_output]
+
+    with patch("api.main.session", mock_session):
+        yield
 
 
-# ================================================================
-# Helper: create a fake test image as PNG bytes
-# ================================================================
-
-def make_test_image_bytes(mode: str = "L", size=(28, 28), color=128) -> bytes:
-    """Create a simple test image and return its PNG bytes."""
-    img = Image.new(mode, size, color=color)
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
-
-
-# ================================================================
-# Mock model: a simple nn.Module that returns fixed logits
-# Used to avoid loading real .pth weights in tests
-# ================================================================
-
-class MockDigitModel(nn.Module):
-    """A fake model that returns predetermined logits for test assertions."""
-
-    def __init__(self, fixed_prediction: int = 2):
-        super().__init__()
-        self.fixed_prediction = fixed_prediction
-
-    def forward(self, x):
-        """Return a batch of logits with fixed_prediction as the max."""
-        batch_size = x.shape[0]
-        logits = torch.zeros(batch_size, 10)
-        logits[:, self.fixed_prediction] = 10.0
-        return logits
-
-    def to(self, device):
-        return self
-
-    def eval(self):
-        return self
+# ---------------------------------------------------------------------------
+# Temporary database
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def temp_db_path():
+    """Create a temporary database file, yield its path, then clean up."""
+    tmpdir = tempfile.mkdtemp()
+    db_path = os.path.join(tmpdir, "test_digit_recognizer.db")
+    original = str(Path(__file__).resolve().parent.parent / "digit_recognizer.db")
+    yield db_path
+    # Clean up
+    for f in os.listdir(tmpdir):
+        os.remove(os.path.join(tmpdir, f))
+    os.rmdir(tmpdir)
 
 
 @pytest.fixture
-def mock_model():
-    """Fixture providing a MockDigitModel that always predicts 2."""
-    model = MockDigitModel(fixed_prediction=2)
-    with patch("app.model.get_model", return_value=model):
-        with patch("app.preprocess.set_device", return_value=torch.device("cpu")):
-            yield model
+def patch_db_path(temp_db_path):
+    """Override common.database.db_path with the temporary path."""
+    import common.database as db_mod
+    original = db_mod.db_path
+    db_mod.db_path = Path(temp_db_path)
+    yield
+    db_mod.db_path = original
 
 
-# ================================================================
-# Mock database: use a temp file via monkeypatch
-# ================================================================
+# ---------------------------------------------------------------------------
+# FastAPI TestClient
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def client():
+    """Provide a TestClient for the FastAPI app."""
+    from api.main import app
+    with TestClient(app) as c:
+        yield c
 
-@pytest.fixture(scope="function")
-def mock_db(tmp_path, monkeypatch):
-    """Point common.config.db_path to a fresh temp file per test function."""
-    test_db = tmp_path / "test.db"
-    monkeypatch.setattr("common.config.db_path", test_db)
-    yield test_db
-    if test_db.exists():
-        test_db.unlink()
+
+# ---------------------------------------------------------------------------
+# Sample images
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def sample_image_l():
+    """Return a 28×28 grayscale (L mode) PNG image as bytes."""
+    img = Image.new("L", (28, 28), color=128)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+@pytest.fixture
+def sample_image_rgb():
+    """Return a 28×28 RGB image as bytes."""
+    img = Image.new("RGB", (28, 28), color=(64, 128, 192))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+@pytest.fixture
+def sample_image_rgba():
+    """Return a 28×28 RGBA image as bytes."""
+    img = Image.new("RGBA", (28, 28), color=(64, 128, 192, 255))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+@pytest.fixture
+def sample_image_cmyk():
+    """Return a 28×28 CMYK image as bytes."""
+    img = Image.new("CMYK", (28, 28), color=(0, 0, 0, 0))
+    buf = io.BytesIO()
+    img.save(buf, format="TIFF")
+    buf.seek(0)
+    return buf
+
+
+@pytest.fixture
+def sample_image_large():
+    """Return a 100×200 grayscale image as bytes (to test resize)."""
+    img = Image.new("L", (100, 200), color=128)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+# ---------------------------------------------------------------------------
+# Sample logits for cal_confidence
+# ---------------------------------------------------------------------------
+@pytest.fixture
+def sample_logits():
+    """Return a (1,10) logits array where class 2 has the highest value."""
+    return np.array([[0.1, 0.2, 2.0, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.1]],
+                    dtype=np.float32)
+
+
+@pytest.fixture
+def uniform_logits():
+    """Return a (1,10) logits array where all values are equal."""
+    return np.ones((1, 10), dtype=np.float32)

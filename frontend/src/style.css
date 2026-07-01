@@ -116,16 +116,6 @@ body {
   transition: all 0.2s;
 }
 
-.preview-card.correct {
-  border-color: #52c41a;
-  background: #f6ffed;
-}
-
-.preview-card.wrong {
-  border-color: #ff4d4f;
-  background: #fff2f0;
-}
-
 .preview-card img {
   width: 100px;
   height: 100px;
@@ -147,17 +137,10 @@ body {
   margin-top: 4px;
 }
 
-.preview-card .prediction.correct {
-  color: #52c41a;
-}
-
-.preview-card .prediction.wrong {
-  color: #ff4d4f;
-}
-
-.preview-card .true-label {
+.preview-card .confidence {
   font-size: 13px;
-  color: #999;
+  color: #1890ff;
+  font-weight: 500;
   margin-top: 2px;
 }
 
@@ -175,17 +158,16 @@ body {
   line-height: 1;
 }
 
-.single-result .digit.correct {
-  color: #52c41a;
-}
-
-.single-result .digit.wrong {
-  color: #ff4d4f;
-}
-
 .single-result .label {
   font-size: 16px;
   color: #666;
+  margin-top: 8px;
+}
+
+.single-result .confidence {
+  font-size: 16px;
+  color: #1890ff;
+  font-weight: 500;
   margin-top: 8px;
 }
 

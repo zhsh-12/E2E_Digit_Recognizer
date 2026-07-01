@@ -1,0 +1,28 @@
+# ============================================
+# Docker Compose - Digit Recognizer
+# Architecture: Nginx (Frontend) + FastAPI (Backend)
+# ============================================
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: digit-recognizer-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist SQLite database to host
+      - ./digit_recognizer.db:/app/digit_recognizer.db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: digit-recognizer-frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    restart: unless-stopped
+

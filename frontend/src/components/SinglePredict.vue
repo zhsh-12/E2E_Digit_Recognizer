@@ -30,28 +30,16 @@
 
     <!-- Prediction result -->
     <div v-if="prediction !== null" class="single-result">
-      <div class="digit" :class="verdictClass">{{ prediction }}</div>
+      <div class="digit">{{ prediction }}</div>
       <div class="label">{{ $t('single.prediction_label') }}</div>
+      <div v-if="confidence !== null" class="confidence">
+        {{ $t('single.confidence') }}: {{ formatConfidence(confidence) }}
+      </div>
 
       <div class="input-group">
-        <label for="trueLabel">{{ $t('single.true_label') }}</label>
-        <input
-          id="trueLabel"
-          v-model.number="trueLabel"
-          type="number"
-          min="0"
-          max="9"
-          placeholder="?"
-        />
-        <button class="btn btn-primary" @click="checkAnswer" style="margin-right: 8px;">{{ $t('single.check') }}</button>
         <button class="btn btn-primary" @click="saveResult" :disabled="saving">
           {{ saving ? $t('single.saving') : $t('single.save') }}
         </button>
-      </div>
-
-      <div v-if="verdict !== null" style="margin-top: 12px; font-size: 18px; font-weight: 600;">
-        <span v-if="verdict" style="color: #52c41a;">{{ $t('single.correct') }}</span>
-        <span v-else style="color: #ff4d4f;">{{ $t('single.wrong', { label: trueLabel }) }}</span>
       </div>
 
       <div v-if="saveMsg" style="margin-top: 8px; font-size: 14px; color: #52c41a;">{{ saveMsg }}</div>
@@ -68,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { predictSingle, savePrediction, exportCsv } from '../api/predict.js'
 
@@ -79,14 +67,17 @@ const isDragover = ref(false)
 const previewUrl = ref(null)
 const selectedFile = ref(null)
 const prediction = ref(null)
-const trueLabel = ref(null)
-const verdict = ref(null)
+const confidence = ref(null)
 const errorMsg = ref('')
 const saving = ref(false)
 const saveMsg = ref('')
 const saveError = ref('')
 const saveSuccess = ref(false)
 const csvLoading = ref(false)
+
+function formatConfidence(val) {
+  return val !== null && val !== undefined ? (val * 100).toFixed(1) + '%' : '-'
+}
 
 function triggerUpload() {
   fileInput.value.click()
@@ -106,8 +97,7 @@ function handleDrop(e) {
 function processFile(file) {
   errorMsg.value = ''
   prediction.value = null
-  trueLabel.value = null
-  verdict.value = null
+  confidence.value = null
   saveMsg.value = ''
   saveError.value = ''
   selectedFile.value = file
@@ -119,14 +109,10 @@ async function doPredict(file) {
   try {
     const result = await predictSingle(file)
     prediction.value = result.prediction
+    confidence.value = result.confidence
   } catch (err) {
     errorMsg.value = 'Prediction failed: ' + (err.response?.data?.detail || err.message)
   }
-}
-
-function checkAnswer() {
-  if (trueLabel.value === null || trueLabel.value === '') return
-  verdict.value = prediction.value === trueLabel.value
 }
 
 async function saveResult() {
@@ -137,7 +123,7 @@ async function saveResult() {
   try {
     const result = await savePrediction({
       predicted_label: prediction.value,
-      true_label: trueLabel.value || null,
+      confidence: confidence.value,
       filename: selectedFile.value?.name || null,
     })
     saveMsg.value = t('single.saved', { id: result.id })
@@ -155,7 +141,7 @@ async function downloadCsv() {
     await exportCsv({
       filename: selectedFile.value?.name || null,
       predicted_label: prediction.value,
-      true_label: trueLabel.value || null,
+      confidence: confidence.value,
     })
   } catch (err) {
     saveError.value = 'CSV download failed: ' + (err.response?.data?.detail || err.message)
@@ -163,10 +149,4 @@ async function downloadCsv() {
     csvLoading.value = false
   }
 }
-
-const verdictClass = computed(() => {
-  if (verdict.value === true) return 'correct'
-  if (verdict.value === false) return 'wrong'
-  return ''
-})
 </script>

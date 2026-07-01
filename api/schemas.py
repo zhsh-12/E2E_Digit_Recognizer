@@ -3,30 +3,26 @@ from pydantic import BaseModel
 
 class SinglePredictionSave(BaseModel):
     predicted_label: int
-    true_label: Optional[int] = None
+    confidence: float
     filename: Optional[str] = None
-    session_id: Optional[str] = None
+    batch_id: Optional[str] = None
 
 
 class BatchResultItem(BaseModel):
     filename: Optional[str] = None
     predicted_label: int
-    true_label: Optional[int] = None
-
+    confidence: float
 
 class BatchPredictionSave(BaseModel):
     batch_id: str
     results: List[BatchResultItem]
-    batch_accuracy: Optional[float] = None
-    session_id: Optional[str] = None
 
 
 class ExportCsvRequest(BaseModel):
-    # Single prediction scenario
+    # Single prediction mode
     filename: Optional[str] = None
     predicted_label: Optional[int] = None
-    true_label: Optional[int] = None
-    # Batch prediction scenario
+    confidence: Optional[float] = None
+    # Batch prediction mode
     batch_id: Optional[str] = None
     results: Optional[List[BatchResultItem]] = None
-    batch_accuracy: Optional[float] = None

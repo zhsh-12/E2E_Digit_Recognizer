@@ -1,33 +1,76 @@
+# ============================================
 # Python
+# ============================================
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.egg-info/
+dist/
+build/
+*.egg
 .venv/
-.uv/
+venv/
+env/
+*.so
+.pytest_cache/
+.coverage
+.coveragerc
+coverage_report/
+*.db
 
-# Node / Frontend (source only, no built artifacts)
+# ============================================
+# Jupyter Notebook
+# ============================================
+.ipynb_checkpoints/
+
+# ============================================
+# Node / Frontend
+# ============================================
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/playwright-report/
 
-# Data & runtime files
-input_imgs/            
-digit_recognizer.db    
 
-# Test & coverage artifacts
-.coverage
-htmlcov/
-.pytest_cache/
+# ============================================
+# Docker
+# ============================================
+.docker/
+docker/docker_deploy.md
 
-# IDE & OS
+# ============================================
+# IDE
+# ============================================
 .idea/
-.vscode/
 *.swp
 *.swo
+*~
+.vscode/
+.zed/
+
+# ============================================
+# macOS
+# ============================================
 .DS_Store
 Thumbs.db
+*.DS_Store
 
-# Training artifacts
-training/*/model_output/old_model.pth   
-training/*/logs/                        
+# ============================================
+# Training data & models (large files, not for git)
+# ============================================
+data_for_training/
+trained_models/
+onnx_models/
+test_imgs/
+
+# ============================================
+# Environment & config
+# ============================================
+.env
+.env.local
+.env.*.local
+
+# ============================================
+# test
+# ============================================
+tests/test_report.md

@@ -8,12 +8,9 @@
   "single.upload_text": "Click or drag an image here",
   "single.upload_hint": "Supports JPG / PNG / JPEG",
   "single.prediction_label": "Prediction",
-  "single.true_label": "True Label:",
-  "single.check": "Check",
+  "single.confidence": "Confidence",
   "single.save": "Save",
   "single.saving": "Saving...",
-  "single.correct": "✅ Correct!",
-  "single.wrong": "❌ Wrong, expected {label}",
   "single.download_csv": "📥 Download CSV",
   "single.downloading": "Downloading...",
   "single.saved": "Saved successfully (ID: {id})",
@@ -27,12 +24,8 @@
   "batch.download_csv": "📥 Download CSV",
   "batch.downloading": "Downloading...",
   "batch.saved": "Saved successfully (Batch: {batch})",
-  "batch.true_label": "True: {label}",
 
   "stats.total": "Total",
-  "stats.correct": "Correct",
-  "stats.wrong": "Wrong",
-  "stats.accuracy": "Accuracy",
 
   "history.title": "📋 Prediction History",
   "history.loading": "Loading...",
@@ -41,9 +34,7 @@
   "history.id": "ID",
   "history.filename": "Filename",
   "history.prediction": "Prediction",
-  "history.true_label": "True Label",
-  "history.result": "Result",
+  "history.confidence": "Confidence",
   "history.batch": "Batch",
-  "history.accuracy": "Accuracy",
   "history.time": "Time"
 }

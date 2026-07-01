@@ -1,120 +1,144 @@
 import io
-import torch
+import logging
+import time
+import numpy as np
+import onnxruntime as ort
 from PIL import Image
+from pathlib import Path
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from typing import List
 
-from app.model import get_model
-from app.preprocess import set_device, transform
-from common.database import init_frontend_db, save_single_prediction, save_batch_frontend, get_frontend_history
+from common.preprocess import transform
+from common.utils import cal_confidence, generate_csv_content
+from common.database import init_db, save_single_prediction, save_batch_predictions, get_history
 from api.schemas import SinglePredictionSave, BatchPredictionSave, ExportCsvRequest
-from api.services import run_inference_concurrently
-from api.csv_export import generate_csv_content
 
-MAX_BATCH_SIZE = 50  # Maximum images per batch prediction
-MAX_REQUEST_SIZE_MB = 100  # Maximum request body size (MB)
+base_dir = Path(__file__).resolve().parent.parent
+quantized_path = base_dir/ "quantized_models"/"quantized_digit_recognizer.onnx"
 
-#Step 1: Load model 
-device = set_device()
-model = get_model(device)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-#Step 2: create backend service
+session = None
+
+# ---------- Create lifespan manager (load model on startup, release on shutdown) ----------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    init_db()
+
+    global session
+    logger.info("🚀 Loading ONNX Runtime session...")
+
+    sess_options = ort.SessionOptions() # Create session options
+    sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL # Enable all graph optimizations
+    providers = ["CPUExecutionProvider"]
+    session = ort.InferenceSession(quantized_path, sess_options, providers=providers)
+   
+    # Warmup: send dummy requests to avoid cold start latency
+    dummy_input = np.zeros((1, 3, 28, 28), dtype=np.float32)
+    for _ in range(3):
+        session.run(['output'], {'input': dummy_input})
+    logger.info("✅ Model loaded and warmed up successfully")
+    
+    yield
+    # Execute on shutdown
+    logger.info("👋 Shutting down...")
+
+# ================ Create FastAPI app ================
 app = FastAPI(
-    title="Digit Recognition API",
-    description="Digit recognition service for universal scenario digits",
-    max_request_size=MAX_REQUEST_SIZE_MB * 1024 * 1024,
+    title='Digit Recognizer API',
+    description='Digit recognition service for universal scenario digits',
+    version='1.0.0',
+    lifespan=lifespan
 )
 
-#Step 3: initialize database for logging
-init_frontend_db()
-
-#Step 4: add CORS middleware (allow Vue frontend cross-origin access)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite dev server address
+    allow_origins=["http://localhost:5173"],  # Vite dev server address (CORS only needed for local dev)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-# ============================================================
-# Health check
-# ============================================================
+# ================ Health check ================
 @app.get('/health')
-def health():
-    return {'status': 'ok'}
+async def health():
+    return {'status': 'ok', 'model_loaded': session is not None}
 
-
-# ============================================================
-# Single prediction
-# ============================================================
+# ================ Single predict ================
 @app.post('/predict')
 async def predict(file: UploadFile = File(...)):
-    """
-    Single prediction: accepts 1 image, returns the prediction
-    """
     if not file.filename:
-        raise HTTPException(status_code=400, detail="No file selected")
-    try:
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents)) 
-        image_tensor = transform(image).unsqueeze(0).to(device) 
-
-        with torch.no_grad():
-            output = model(image_tensor)
-            prediction = output.argmax(dim=1).item()
-        return {'prediction': prediction}
+        raise HTTPException(status_code=400, detail='No file selected')
     
+    start_time = time.perf_counter()
+
+    try:
+        # Read image
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
+        
+        # Preprocess (returns numpy array of shape (1, 3, 28, 28))
+        input_data = transform(image)
+        
+        # ONNX Runtime inference
+        output = session.run(['output'], {'input': input_data})
+        # output[0]: first element of model output, a numpy array of shape (1, 10)
+        prediction = int(np.argmax(output[0])) # Convert numpy type to Python native type
+        confidence = cal_confidence(output[0])
+        
+        elapsed_ms = (time.perf_counter() - start_time) * 1000
+        
+        logger.info(f"Predicted: {prediction}, confidence: {confidence:.4f}, time: {elapsed_ms:.2f}ms")
+        
+        return {
+            'prediction': prediction,
+            'confidence': confidence,
+            'inference_time_ms': round(elapsed_ms, 2)
+        }
+        
     except Exception as e:
+        logger.error(f"Prediction failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ============================================================
-# Batch prediction
-# ============================================================
+# ================ Batch predict ================
 @app.post('/batch_predict')
-async def batch_predict(files: List[UploadFile] = File(...)):
-    """
-    Batch prediction: accepts multiple images, returns predictions for each file
-
-    Features:
-    - Max MAX_BATCH_SIZE images per request (default 50)
-    - Uses thread pool for concurrent inference, significantly improving speed
-    - Asynchronously reads files without blocking the event loop
-    """
+async def batch_predict(files: list[UploadFile] = File(...)):
     if not files:
-        raise HTTPException(status_code=400, detail="No files selected")
+        raise HTTPException(status_code=400, detail='No files provided')
+    
+    results = []
+    for file in files:
+        try:
+            contents = await file.read()
+            image = Image.open(io.BytesIO(contents))
+            
+            input_data = transform(image)
+        
+            output = session.run(['output'], {'input': input_data})
+            prediction = int(np.argmax(output[0]))
+            confidence = cal_confidence(output[0])
+            results.append({'filename': file.filename, 'prediction': prediction, 'confidence': confidence})
+        
+        except Exception as e:
+            results.append({'filename': file.filename, 'error': str(e)})
+            logger.error(f"{file.filename} failed: {str(e)}")
+            
+    return {'results': results}
 
-    if len(files) > MAX_BATCH_SIZE:
-        raise HTTPException(
-            status_code=413,
-            detail=f"Batch prediction supports at most {MAX_BATCH_SIZE} images per request, "
-                    f"but {len(files)} were uploaded. "
-                    f"Please upload in batches of no more than {MAX_BATCH_SIZE}."
-        )
-
-    try:
-        results = await run_inference_concurrently(files)
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Batch prediction failed: {str(e)}")
-
-# ============================================================
-# Save results & query history
-# ============================================================
-
+# ================ Save results & query history ================
 @app.post('/api/save_prediction')
 async def api_save_prediction(data: SinglePredictionSave):
     """Save single prediction result"""
     try:
         record_id = save_single_prediction(
             predicted_label=data.predicted_label,
-            true_label=data.true_label,
+            confidence=data.confidence,
             filename=data.filename,
-            session_id=data.session_id,
+            batch_id=data.batch_id,
         )
         return {"id": record_id, "message": "Saved successfully"}
     except Exception as e:
@@ -126,11 +150,9 @@ async def api_save_batch_results(data: BatchPredictionSave):
     """Save batch prediction results"""
     try:
         results_dicts = [item.model_dump() for item in data.results]
-        save_batch_frontend(
+        save_batch_predictions(
             batch_id=data.batch_id,
-            results=results_dicts,
-            batch_accuracy=data.batch_accuracy,
-            session_id=data.session_id,
+            results=results_dicts
         )
         return {"message": f"Batch {data.batch_id}: {len(data.results)} results saved successfully"}
     except Exception as e:
@@ -139,26 +161,17 @@ async def api_save_batch_results(data: BatchPredictionSave):
 
 @app.get('/api/prediction_history')
 async def api_prediction_history(limit: int = 50, offset: int = 0):
-    """Query frontend prediction history"""
+    """Query prediction history"""
     try:
-        records = get_frontend_history(limit=limit, offset=offset)
+        records = get_history(limit=limit, offset=offset)
         return {"records": records, "count": len(records)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# ============================================================
-# CSV export API
-# ============================================================
-
+# ================ CSV export API ================
 @app.post('/api/export_csv')
 async def api_export_csv(data: ExportCsvRequest):
-    """
-    Export prediction results as a CSV file download.
-    Auto-detects mode:
-    - Having true labels: CSV includes [ID, Filename, Prediction, True Label, Result, Batch, Accuracy, Time]
-    - No true labels: CSV includes [ID, Filename, Prediction, Batch, Time]
-    """
+    """Export prediction results as a CSV file for download"""
     try:
         csv_content, filename = generate_csv_content(data)
         return StreamingResponse(
@@ -172,6 +185,5 @@ async def api_export_csv(data: ExportCsvRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"CSV export failed: {str(e)}")
 
-
-# Start backend: uvicorn api.main:app --reload --port 8000
+# Start backend: gunicorn api.main:app -c gunicorn.conf.py
 # Start frontend: cd frontend; npm run dev
