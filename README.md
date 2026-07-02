@@ -26,14 +26,17 @@
 
 v2 在 v1（PyTorch 推理 + FastAPI + Vue 3 + Docker）基础上，引入工业级模型优化技术栈，核心升级体现为以下四大维度：
 
-🚀 **模型优化** — PyTorch FP32 → ONNX FP32 导出 → **INT8 静态量化**（MinMax 校准），推理速度 **↑ 4.3 倍**（1.11ms → 0.26ms），模型体积 **↓ 10.4 倍**（3.7MB → 362KB）
+**模型优化** — PyTorch FP32 → ONNX FP32 导出 → **INT8 静态量化**（MinMax 校准），推理速度 **↑ 4.3 倍**（1.11ms → 0.26ms），模型体积 **↓ 10.4 倍**（3.7MB → 362KB）
 
-🐳 **生产部署** — ONNX Runtime 图优化（ORT_ENABLE_ALL）+ Gunicorn 多进程 + Nginx 反向代理，Docker 镜像 **↓ 75%**（1.2GB → 300MB），**跨平台一键部署（macOS / Windows / Linux）**
+**精度评估**：基于 155 张多源测试图片的评估表明，INT8 量化后模型精度 **完全无损**（FP32: 89.68% → INT8: 89.68%）
 
-📐 **工程规范** — uv 包管理 + Makefile 自动化 + 多阶段 Docker 构建 + 混合数据集校准策略
+**生产部署** — ONNX Runtime 图优化（ORT_ENABLE_ALL）+ Gunicorn 多进程 + Nginx 反向代理，Docker 镜像 **↓ 75%**（1.2GB → 300MB），**跨平台一键部署（macOS / Windows / Linux）**
 
-🧪 **质量保障** — **109 项**全链路测试（pytest + vitest + Playwright），后端代码覆盖率 **95%**，性能基准测试持续追踪
+**工程规范** — uv 包管理 + Makefile 自动化 + 多阶段 Docker 构建 + 混合数据集校准策略
 
+**质量保障** — **109 项**全链路测试（pytest + vitest + Playwright），后端代码覆盖率 **95%**，性能基准测试持续追踪
+
+![Accuracy report](docs/images/accuracy_report.png)
 
 ![Benchmark Comparison](docs/images/benchmark_comparison.png)
 
@@ -44,7 +47,9 @@ v2 在 v1（PyTorch 推理 + FastAPI + Vue 3 + Docker）基础上，引入工业
 | 推理框架 | PyTorch 2.11 | ONNX Runtime | ONNX Runtime (INT8) | — |
 | Docker 镜像 | ~1.2 GB | ~300 MB | ~300 MB | **↓ 75%** |
 
+
 ---
+
 
 ## 🛠️ 技术栈
 
@@ -142,7 +147,7 @@ git clone https://github.com/你的用户名/Digit_recognizer_quant.git
 cd Digit_recognizer_quant
 
 # 构建并启动（Windows 上用 docker compose 替代 make）
-docker compose up -d --build
+docker-compose up -d --build
 
 # 访问 http://localhost:8080
 # API 文档 http://localhost:8000/docs
