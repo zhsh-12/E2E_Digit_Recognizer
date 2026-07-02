@@ -22,13 +22,11 @@
 
 ## 📖 项目简介
 
-**Digit Recognizer v2** 是一个基于 ONNX Runtime 推理引擎的全栈数字识别应用，覆盖 **ONNX 量化 → 服务封装 → Web 前端 → 容器化部署** 的完整链路。
-
-v2 在 v1（PyTorch 推理 + FastAPI + Vue 3 + Docker）基础上，引入工业级模型优化技术栈，核心升级体现为以下四大维度：
+**Digit Recognizer v2** 是一个基于 ONNX Runtime 推理引擎的全栈数字识别应用，覆盖 **ONNX 量化 → 服务封装 → Web 前端 → 容器化部署** 的完整链路。v2 在 v1（PyTorch 推理 + FastAPI + Vue 3 + Docker）基础上，引入工业级模型优化技术栈，核心升级体现如下：
 
 **模型优化** — PyTorch FP32 → ONNX FP32 导出 → **INT8 静态量化**（MinMax 校准），推理速度 **↑ 4.3 倍**（1.11ms → 0.26ms），模型体积 **↓ 10.4 倍**（3.7MB → 362KB）
 
-**精度评估**：基于 155 张多源测试图片的评估表明，INT8 量化后模型精度 **完全无损**（FP32: 89.68% → INT8: 89.68%）
+**精度评估** — 基于 155 张多源测试图片的评估表明，INT8 量化后模型精度 **完全无损**（FP32: 89.68% → INT8: 89.68%）
 
 **生产部署** — ONNX Runtime 图优化（ORT_ENABLE_ALL）+ Gunicorn 多进程 + Nginx 反向代理，Docker 镜像 **↓ 75%**（1.2GB → 300MB），**跨平台一键部署（macOS / Windows / Linux）**
 
