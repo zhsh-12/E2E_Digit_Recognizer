@@ -123,7 +123,7 @@
 
 ## 🚀 快速开始
 
-> 💡 **跨平台提示**：本项目基于 Docker 容器化，支持 **macOS / Windows / Linux** 三平台一键部署，无需手动配置 Python 或 Node 环境。
+💡 **跨平台提示**：本项目基于 Docker 容器化，支持 **macOS / Windows / Linux** 三平台一键部署，无需手动配置 Python 或 Node 环境。
 
 ### macOS / Linux
 
@@ -144,17 +144,17 @@ make up
 git clone https://github.com/你的用户名/Digit_recognizer_quant.git
 cd Digit_recognizer_quant
 
-# 构建并启动（Windows 上用 docker compose 替代 make）
+# 构建并启动（Windows 上用 docker-compose 替代 make）
 docker-compose up -d --build
 
 # 访问 http://localhost:8080
 # API 文档 http://localhost:8000/docs
 
 # 查看日志
-docker compose logs -f
+docker-compose logs -f
 
 # 停止服务
-docker compose down
+docker-compose down
 ```
 
 ### 本地开发（通用）
